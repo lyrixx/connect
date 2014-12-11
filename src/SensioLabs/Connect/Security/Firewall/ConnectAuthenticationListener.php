@@ -18,6 +18,7 @@ use SensioLabs\Connect\OAuthConsumer;
 use SensioLabs\Connect\Security\Authentication\Token\ConnectToken;
 use SensioLabs\Connect\Security\Exception\AuthenticationException;
 use SensioLabs\Connect\Security\Exception\OAuthAccessDeniedException;
+use SensioLabs\Connect\Security\Exception\OAuthEmailNotValidatedException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Firewall\AbstractAuthenticationListener;
 use Symfony\Component\Security\Http\HttpUtils;
@@ -72,8 +73,13 @@ class ConnectAuthenticationListener extends AbstractAuthenticationListener
             $this->api->setAccessToken($data['access_token']);
             $apiUser = $this->api->getRoot()->getCurrentUser();
         } catch (ExceptionInterface $e) {
-            if ($e instanceof OAuthException && 'access_denied' === $e->getType()) {
-                throw new OAuthAccessDeniedException($e);
+            if ($e instanceof OAuthException) {
+                if ('access_denied' === $e->getType()) {
+                    throw new OAuthAccessDeniedException($e);
+                }
+                if ('email_not_validated' === $e->getType()) {
+                    throw new OAuthEmailNotValidatedException($e);
+                }
             }
 
             $this->logger and $this->logger->critical('Something went wrong while trying to access SensioLabsConnect.', array('exception' => $e));
